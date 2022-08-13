@@ -10,23 +10,27 @@ const grid = [
   5,9,3,
   6,8,7
 ]
+
+// 0 1 2
+// 3 4 5
+// 6 7 8
 // map active track areas over the grid
 // each index contains the grid indices that are active there
 const areas = [
-  [0,1,3],
+  [0,1,3,6],
   [0,1,2],
-  [1,2,5],
-  [0,3,6],
+  [1,2,5,8],
+  [0,3,6,1],
   [0,1,2,3,4,5,6,7,8],
-  [2,5,8],
+  [2,5,8,7],
   [3,6,7],
-  [6,7,8],
-  [5,7,8]
+  [6,7,8,5],
+  [5,7,8,6]
 ]
 // relative volumes for each track
 const volumes = [
   -20, -12, -20,
-  -12, 2,   -12,
+  -12, 0,   -12,
   -20, -12, -20
 ]
 
@@ -44,6 +48,7 @@ var finished = false // indicates end of piece
 var traveled = []
 // shows whether audio of the index is active
 var active = []
+
 
 function createGrid(matrix) {	
   var element = document.getElementById('grid-main')
@@ -72,19 +77,63 @@ function createTracks(matrix) {
 }
 
 
-var tracks = createTracks(grid)
 var introduction = new Tone.Player(`./sources/Introduction.mp3`).toDestination()
 var solo = new Tone.Player(`./sources/Solo.mp3`).toDestination()
+var backupSolo = new Tone.Player(`./sources/Solo.mp3`).toDestination()
 var end = new Tone.Player(`./sources/End.mp3`).toDestination()
+var tracks = createTracks(grid)
+var backupTracks = createTracks(grid)
 
 var loopLength = 20.9
-var soloStart = 36.635
+var soloStart = 36.55
+// solo.loopEnd = loopLength
+// solo.onstop = playTracks
+var soloLoop = new Tone.Loop((time) => {
+  if (prev != -1) {
+    soloLoop.stop(0.05)
+    trackLoop.start()
+  }
+  else if (solo.state === 'started') {
+    backupSolo.start()
+  }
+  else {
+    solo.start()
+  }
+}, loopLength)
+
+var trackLoop = new Tone.Loop((time) => {
+  if (!finished) {
+    for (let i=0; i<tracks.length; i++) {
+      if (active[i]) {
+        if (tracks[i].state === "started")
+          backupTracks[i].start(loopLength)
+        else
+          tracks[i].start(loopLength)
+      }
+    }
+  }
+  else {
+    end.start()
+    let element = document.getElementById('instructions')
+    element.textContent = 'Thanks for Listening! Press Space to Restart'
+    let description = document.getElementById('textBody')
+    description.textContent = endDescription
+    trackLoop.stop(0.05)
+  }
+}, loopLength)
+
+function fadeStop(track) {
+
+}
 
 function playTracks() {
   if (!finished) {
     for (let i=0; i<tracks.length; i++) {
       if (active[i]) {
-        tracks[i].start(loopLength)
+        if (tracks[i].state === "started")
+          backupTracks[i].start(loopLength)
+        else
+          tracks[i].start(loopLength)
       }
     }
     setTimeout(playTracks, loopLength*1000)
@@ -170,14 +219,28 @@ function move(direction) {
 function start() {
   // while (!introduction.loaded) {}
   // introduction.start(0,introductionStart,introductionStop-introductionStart)
-  introduction.start()
+  try {
+    introduction.start()
+    if (introduction.state === 'stopped')
+      return
+    Tone.Transport.start()
+    soloLoop.start(soloStart)
+  }
+  catch (e) {
+    let element = document.getElementById('instructions')
+    element.textContent = 'Audio Not Loaded Yet, Please Press Space Again'
+    return
+  }
+  // let currentTime = Tone.now()
+  
   let element = document.getElementById('instructions')
   element.textContent = 'Playing Introduction'
   let description = document.getElementById('textBody')
   description.textContent = introDescription
-  
-  setTimeout(playSolo, soloStart*1000)
-   
+
+  // soloLoop.start(introduction.toSeconds(currentTime)+soloStart)
+  // setTimeout(playSolo, soloStart*1000)
+  // return
   // perform actions once the introduction is finished
   setTimeout(function() {
     traveled[position] = true
@@ -192,6 +255,19 @@ function start() {
   }, (soloStart+0.5)*1000)  
 }
 
+function restart() {
+  position = startPosition
+  prev = -1
+  finishedIntro = false
+  visited = 0 // count of tiles have been visited
+  finished = false // indicates end of piece
+  traveled = []
+  // shows whether audio of the index is active
+  active = []
+  createGrid(grid)
+  start()
+}
+
 var space_bar = 32;
 var right_arrow = 39;
 var left_arrow = 37
@@ -200,10 +276,26 @@ var down_arrow = 40
 
 // pause/play using space bar
 document.onkeydown = function(gfg){
-  if (!finishedIntro && gfg.keyCode === space_bar)
-    start()
-  else if (gfg.keyCode === space_bar && visited === grid.length)
-    finished = true
+  if (gfg.keyCode === space_bar) {
+    if (introduction.state === "stopped" && !finishedIntro && gfg.keyCode === space_bar)
+      start()
+    else if (gfg.keyCode === space_bar && visited === grid.length)
+      finished = true
+    else if (end.state === 'stopped' && finished)
+      restart()
+  }
+  // else {
+  //   solo.loop = !solo.loop
+  //   console.log(solo.toSeconds(solo.now()))
+  //   if (solo.loop) {
+  //     solo.start()
+  //     solo.fadeOut = 10
+  //   }  
+  //   else {
+  //     solo.fadeOut = 10
+  //   }
+  // }
+  //   finishedIntro = true
   if (finishedIntro) {
 
     if (gfg.keyCode === right_arrow)
