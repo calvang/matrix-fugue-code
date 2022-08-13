@@ -10,6 +10,6 @@ export var descriptions = [
     'A texture of arpeggios by the viola.',
 ]
 
-export var introDescription = 'The fugal exposition introducing all nine voices.'
+export var introDescription = 'The fugal exposition introducing the subject, or the main theme, in all nine voices.'
 export var soloDescription = 'A series of simple statement of the subject.'
 export var endDescription = 'The voices fade out with a final stretto with the subject in its original and inverted forms.'
