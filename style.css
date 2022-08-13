@@ -17,8 +17,10 @@
   align-items: center;
 }
 #instructionButton {
-  /* background-color: #f6f8f6; Green */
+  background-color: #ffffff; 
   border: none;
+  box-shadow: none;
+  outline: 0;
   padding: 5px;
   text-align: center;
   font-size: 25px;

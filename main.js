@@ -321,6 +321,7 @@ function restart() {
 function instructionControl() {
   if (keys.space.down)
     return
+  console.log(startedEnd,finishedIntro,introduction.state)
   keys.space.down = true
   if (end.state === 'stopped') {
     if (startedEnd)
