@@ -20,12 +20,12 @@ const areas = [
   [0,1,3,6],
   [0,1,2],
   [1,2,5,8],
-  [0,3,6,1],
+  [0,3,6,7],
   [0,1,2,3,4,5,6,7,8],
-  [2,5,8,7],
+  [2,5,8,7,1],
   [3,6,7],
   [6,7,8,5],
-  [5,7,8,6]
+  [5,7,8,6,3]
 ]
 // relative volumes for each track
 const volumes = [
@@ -77,6 +77,7 @@ function createTracks(matrix) {
 }
 
 
+
 var introduction = new Tone.Player(`./sources/Introduction.mp3`).toDestination()
 var solo = new Tone.Player(`./sources/Solo.mp3`).toDestination()
 var backupSolo = new Tone.Player(`./sources/Solo.mp3`).toDestination()
@@ -109,6 +110,7 @@ var trackLoop = new Tone.Loop((time) => {
           backupTracks[i].start(loopLength)
         else
           tracks[i].start(loopLength)
+        
       }
     }
   }
@@ -122,8 +124,28 @@ var trackLoop = new Tone.Loop((time) => {
   }
 }, loopLength)
 
-function fadeStop(track) {
+function fadeIn(track, backupTrack, target) {
+  setTimeout(() => {
+    if (track.volume.value < target) {
+      track.volume.value -= 10
+      backupTrack.volume.value -= 10
+      setTimeout(fadeIn)
+    }
+  }, 200)
+}
 
+function fadeOut(track, backupTrack) {
+  setTimeout(() => {
+    if (track.volume.value > target) {
+      track.volume.value -= 10
+      backupTrack.volume.value -= 10
+      setTimeout(fadeIn)
+    }
+    else {
+      track.stop()
+      backupTrack.stop()
+    }
+  }, 200)
 }
 
 function playTracks() {
@@ -207,7 +229,7 @@ function move(direction) {
       }
       else {
         let element = document.getElementById('instructions')
-        element.textContent = 'Return To the Center'
+        element.textContent = 'Return To the Center To Combine Everything'
       }
     }
     let description = document.getElementById('textBody')
