@@ -53,12 +53,13 @@ var active = []
 function createGrid(matrix) {	
   var element = document.getElementById('grid-main')
   for (let i=0; i<matrix.length; i++) {
-    let div = document.createElement('div')
-    // div.textContent = matrix[i].toString()
-    div.textContent = (i+1).toString() // does not correspond to the tracks
-    div.className = 'grid-item'
-    div.id = `block${i+1}`
-    element.appendChild(div)
+    if (!finishedIntro) { // skip if restarting
+      let div = document.createElement('div')
+      div.textContent = (i+1).toString() // does not correspond to the tracks
+      div.className = 'grid-item'
+      div.id = `block${i+1}`
+      element.appendChild(div)
+    }
         
     traveled.push(false)
     active.push(false)
@@ -134,16 +135,19 @@ function fadeIn(track, backupTrack, target) {
   }, 200)
 }
 
-function fadeOut(track, backupTrack) {
+function fadeOut(track, backupTrack, original) {
   setTimeout(() => {
-    if (track.volume.value > target) {
+    if (track.state === 'started') {
       track.volume.value -= 10
+      setTimeout(fadeOut)
+    }
+    else if (BackupTrack.state === 'started') {
       backupTrack.volume.value -= 10
-      setTimeout(fadeIn)
+      setTimeout(fadeOut)
     }
     else {
-      track.stop()
-      backupTrack.stop()
+      track.volume.value = original
+      backupTrack.volume.value = original
     }
   }, 200)
 }
@@ -280,13 +284,13 @@ function start() {
 function restart() {
   position = startPosition
   prev = -1
-  finishedIntro = false
   visited = 0 // count of tiles have been visited
   finished = false // indicates end of piece
   traveled = []
   // shows whether audio of the index is active
   active = []
   createGrid(grid)
+  finishedIntro = false
   start()
 }
 
@@ -299,12 +303,12 @@ var down_arrow = 40
 // pause/play using space bar
 document.onkeydown = function(gfg){
   if (gfg.keyCode === space_bar) {
-    if (introduction.state === "stopped" && !finishedIntro && gfg.keyCode === space_bar)
+    if (end.state === 'stopped' && finished)
+      restart()
+    else if (introduction.state === "stopped" && !finishedIntro && gfg.keyCode === space_bar)
       start()
     else if (gfg.keyCode === space_bar && visited === grid.length)
       finished = true
-    else if (end.state === 'stopped' && finished)
-      restart()
   }
   // else {
   //   solo.loop = !solo.loop
