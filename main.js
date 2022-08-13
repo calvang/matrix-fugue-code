@@ -50,6 +50,15 @@ var traveled = []
 // shows whether audio of the index is active
 var active = []
 
+// hotkeys/actions
+var keys = {
+  'space': { 'code': 32, 'down': false },
+  'right': { 'code': 39, 'down': false },
+  'left': { 'code': 37, 'down': false },
+  'up': { 'code': 38, 'down': false },
+  'down': { 'code': 40, 'down': false },
+}
+
 
 function createGrid(matrix) {	
   var element = document.getElementById('grid-main')
@@ -61,7 +70,7 @@ function createGrid(matrix) {
       div.id = `block${i+1}`
       element.appendChild(div)
     }
-        
+    document.getElementById(`block${i+1}`).style.backgroundColor = ''
     traveled.push(false)
     active.push(false)
   }
@@ -72,8 +81,8 @@ function createTracks(matrix) {
   for (let i=0; i<matrix.length; i++) {
     var player = new Tone.Player(`./sources/tracks/track${matrix[i]}.mp3`).toDestination()
     player.volume.value = volumes[i]
+    player.mute = true
     tracks.push(player)
-  
   }
   return tracks
 }
@@ -91,102 +100,88 @@ var soloStart = 36.55
 
 end.onstop = (source) => { 
   let element = document.getElementById('instructions')
-  element.textContent = 'Thanks for Listening! Press Space to Restart'
+  element.textContent = 'Thanks for Listening! Press Space or Click Here to Restart'
 }
-// solo.loopEnd = loopLength
-// solo.onstop = playTracks
-var soloLoop = new Tone.Loop((time) => {
-  if (prev != -1) {
-    soloLoop.stop(0.05)
-    trackLoop.start()
-  }
-  else if (solo.state === 'started') {
-    backupSolo.start()
-  }
-  else {
-    solo.start()
-  }
-}, loopLength)
 
+
+function playTrackHelper(track, backupTrack) {
+  if (track.state === 'started') 
+    backupTrack.start()
+  else 
+    track.start()
+}
+
+// loop the solo and individual instrument tracks
 var trackLoop = new Tone.Loop((time) => {
   if (!finished) {
+    playTrackHelper(solo, backupSolo)
     for (let i=0; i<tracks.length; i++) {
-      if (active[i]) {
-        if (tracks[i].state === "started")
-          backupTracks[i].start(loopLength)
-        else
-          tracks[i].start(loopLength)
-        
-      }
+      playTrackHelper(tracks[i], backupTracks[i])
     }
   }
   else {
     end.start()
     startedEnd = true
+
+    let element = document.getElementById('instructions')
+    element.textContent = 'Coda'
     let description = document.getElementById('textBody')
     description.textContent = endDescription
+
     trackLoop.stop(0.05)
   }
 }, loopLength)
 
-function fadeIn(track, backupTrack, target) {
+function fadeIn(track, backupTrack, duration, targetVolume, interval=0.5, step=8) {
+  const startVolume = targetVolume-(duration/interval)*step
+
+  track.volume.value = startVolume
+  backupTrack.volume.value = startVolume
+
+  track.mute = false
+  backupTrack.mute = false
+
+  var intervalId = setInterval(() => {
+    if (track.state === 'started' || backupTrack.state === 'started') {
+      backupTrack.volume.value += step
+      track.volume.value += step
+    }
+  }, interval*1000)
+
   setTimeout(() => {
-    if (track.volume.value < target) {
-      track.volume.value -= 10
-      backupTrack.volume.value -= 10
-      setTimeout(fadeIn)
-    }
-  }, 200)
+    clearInterval(intervalId)
+
+    backupTrack.volume.value = targetVolume
+    track.volume.value = targetVolume
+  }, duration*1000)
 }
 
-function fadeOut(track, backupTrack, original) {
+function fadeOut(track, backupTrack, duration, interval=0.5, step=2) {
+  var intervalId = setInterval(() => {
+    if (track.state === 'started' || backupTrack.state === 'started') {
+      backupTrack.volume.value -= step
+      track.volume.value -= step
+    }
+  }, interval*1000)
+
   setTimeout(() => {
-    if (track.state === 'started') {
-      track.volume.value -= 10
-      setTimeout(fadeOut)
-    }
-    else if (BackupTrack.state === 'started') {
-      backupTrack.volume.value -= 10
-      setTimeout(fadeOut)
-    }
-    else {
-      track.volume.value = original
-      backupTrack.volume.value = original
-    }
-  }, 200)
+    clearInterval(intervalId)
+
+    track.mute = true
+    backupTrack.mute = true
+  }, duration*1000)
 }
 
-function playTracks() {
-  if (!finished) {
-    for (let i=0; i<tracks.length; i++) {
-      if (active[i]) {
-        if (tracks[i].state === "started")
-          backupTracks[i].start(loopLength)
-        else
-          tracks[i].start(loopLength)
-      }
-    }
-    setTimeout(playTracks, loopLength*1000)
-  }
-  else {
-    end.start()
-    let description = document.getElementById('textBody')
-    description.textContent = endDescription
-  }
-}
-function playSolo() {
-  if (prev != -1) {
-    playTracks()
-  }
-  else {
-    solo.start()
-    setTimeout(playSolo, loopLength*1000)
-  }
-}
+function move(direction, fadeOutTime=8, fadeInTime=5) {
+  if (keys.right.down)
+    return
 
-function move(direction) {
-  var temp = position
+  for (let key in keys) // avoid race conditions
+    keys[key].down = true
+  
   var moved = false
+  if (prev === -1)
+    fadeOut(solo, backupSolo, fadeOutTime)
   if (direction === 'up' && position >= width) {
     prev = position
     moved = true
@@ -213,7 +208,7 @@ function move(direction) {
       visited++
       traveled[position] = true
     }
-    
+    var tempActive = [...active]
     // compute the active areas and what tracks to play
     for (let i=0; i<areas[prev].length; i++) {
       var index = areas[prev][i] // grid index of track
@@ -225,6 +220,13 @@ function move(direction) {
         active[index] = true
       }
     }
+    for (let i=0; i<active.length; i++) {
+      if (active[i] && !tempActive[i])
+        fadeIn(tracks[i], backupTracks[i], fadeInTime, volumes[i])
+      else if (!active[i] && tempActive[i])
+        fadeOut(tracks[i], backupTracks[i], fadeOutTime)
+    }
+
     // recolor the tiles
     document.getElementById(`block${prev+1}`).style.backgroundColor = 'white'
     document.getElementById(`block${position+1}`).style.backgroundColor = 'yellow'
@@ -233,7 +235,7 @@ function move(direction) {
     if (visited === traveled.length) {
       if (position === startPosition) {
         let element = document.getElementById('instructions')
-        element.textContent = 'Press Space Or Click Here to Finish'
+        element.textContent = 'Press Space or Click Here to Finish'
       }
       else {
         let element = document.getElementById('instructions')
@@ -243,7 +245,8 @@ function move(direction) {
     let description = document.getElementById('textBody')
     description.textContent = descriptions[position]
   }
-  
+  for (let key in keys) 
+    keys[key].down = false
 }
 
 function start() {
@@ -254,7 +257,7 @@ function start() {
     if (introduction.state === 'stopped')
       return
     Tone.Transport.start()
-    soloLoop.start(soloStart)
+    trackLoop.start(soloStart)
   }
   catch (e) {
     let element = document.getElementById('instructions')
@@ -268,9 +271,6 @@ function start() {
   let description = document.getElementById('textBody')
   description.textContent = introDescription
 
-  // soloLoop.start(introduction.toSeconds(currentTime)+soloStart)
-  // setTimeout(playSolo, soloStart*1000)
-  // return
   // perform actions once the introduction is finished
   setTimeout(function() {
     traveled[position] = true
@@ -288,6 +288,19 @@ function start() {
   }, (soloStart+0.5)*1000)  
 }
 
+function resetTracks() {
+  solo.volume.value = 0
+  backupSolo.volume.value = 0
+  solo.mute = false
+  backupSolo.mute = false
+  for (let i=0; i<tracks.length; i++) {
+    tracks[i].volume.value = volumes[i]
+    tracks[i].mute = true
+    backupTracks[i].volume.value = volumes[i]
+    backupTracks[i].mute = true
+  }
+}
+
 function restart() {
   position = startPosition
   prev = -1
@@ -297,18 +310,17 @@ function restart() {
   // shows whether audio of the index is active
   active = []
   createGrid(grid)
+  resetTracks()
   finishedIntro = false
   start()
 }
 
-var space_bar = 32;
-var right_arrow = 39;
-var left_arrow = 37
-var up_arrow = 38
-var down_arrow = 40
 
 // main controls for the instruction button
 function instructionControl() {
+  if (keys.space.down)
+    return
+  keys.space.down = true
   if (end.state === 'stopped') {
     if (startedEnd)
       restart()
@@ -317,6 +329,7 @@ function instructionControl() {
     else if (visited === grid.length)
       finished = true
   }
+  keys.space.down = false
 }
 
 document.getElementById('instructionButton').onclick = function() {
@@ -325,17 +338,17 @@ document.getElementById('instructionButton').onclick = function() {
 
 // pause/play using space bar
 document.onkeydown = function(gfg){
-  if (gfg.keyCode === space_bar) {
+  if (gfg.keyCode === keys.space.code && !keys.space.down) {
     instructionControl()
   }
   if (finishedIntro && !startedEnd) {
-    if (gfg.keyCode === right_arrow)
+    if (gfg.keyCode === keys.right.code && !keys.right.down)
       move('right')
-    else if (gfg.keyCode === left_arrow)
+    else if (gfg.keyCode === keys.left.code && !keys.left.down)
       move('left')
-    else if (gfg.keyCode === up_arrow)
+    else if (gfg.keyCode === keys.up.code && !keys.up.down)
       move('up')
-    else if (gfg.keyCode === down_arrow)
+    else if (gfg.keyCode === keys.down.code && !keys.down.down)
       move('down')
   }
 };
