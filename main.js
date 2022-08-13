@@ -160,9 +160,11 @@ function move(direction) {
   }
   //
   if (moved) {   
-    if (!traveled[position])
+    if (!traveled[position]) {
       visited++
-    traveled[position] = true
+      traveled[position] = true
+    }
+    console.log(visited)
     // compute the active areas and what tracks to play
     for (let i=0; i<areas[prev].length; i++) {
       var index = areas[prev][i] // grid index of track
@@ -203,14 +205,16 @@ function start() {
   element.textContent = 'Playing Introduction'
   let description = document.getElementById('textBody')
   description.textContent = introDescription
-  // solo.start(soloStart)
+  
   setTimeout(playSolo, soloStart*1000)
-  // playSolo()
-  // solo.start(soloStart+loopLength)
+   
+  // perform actions once the introduction is finished
   setTimeout(function() {
     traveled[position] = true
-    document.getElementById(`block${position+1}`).style.backgroundColor = 'yellow'
+    visited++
+    document.getElementById(`block${position+1}`).style.backgroundColor = 'yellow' 
     finishedIntro = true
+
     let element = document.getElementById('instructions')
     element.textContent = 'Use the Arrow Keys to move around'
     let description = document.getElementById('textBody')
