@@ -43,6 +43,7 @@ const startPosition = 4
 var position = startPosition
 var prev = -1
 var finishedIntro = false
+var startedEnd = false
 var visited = 0 // count of tiles have been visited
 var finished = false // indicates end of piece
 var traveled = []
@@ -78,7 +79,6 @@ function createTracks(matrix) {
 }
 
 
-
 var introduction = new Tone.Player(`./sources/Introduction.mp3`).toDestination()
 var solo = new Tone.Player(`./sources/Solo.mp3`).toDestination()
 var backupSolo = new Tone.Player(`./sources/Solo.mp3`).toDestination()
@@ -88,6 +88,11 @@ var backupTracks = createTracks(grid)
 
 var loopLength = 20.9
 var soloStart = 36.55
+
+end.onstop = (source) => { 
+  let element = document.getElementById('instructions')
+  element.textContent = 'Thanks for Listening! Press Space to Restart'
+}
 // solo.loopEnd = loopLength
 // solo.onstop = playTracks
 var soloLoop = new Tone.Loop((time) => {
@@ -117,8 +122,7 @@ var trackLoop = new Tone.Loop((time) => {
   }
   else {
     end.start()
-    let element = document.getElementById('instructions')
-    element.textContent = 'Thanks for Listening! Press Space to Restart'
+    startedEnd = true
     let description = document.getElementById('textBody')
     description.textContent = endDescription
     trackLoop.stop(0.05)
@@ -306,7 +310,7 @@ var down_arrow = 40
 // main controls for the instruction button
 function instructionControl() {
   if (end.state === 'stopped') {
-    if (finished)
+    if (startedEnd)
       restart()
     else if (introduction.state === "stopped" && !finishedIntro)
       start()
@@ -324,7 +328,7 @@ document.onkeydown = function(gfg){
   if (gfg.keyCode === space_bar) {
     instructionControl()
   }
-  if (finishedIntro) {
+  if (finishedIntro && !startedEnd) {
     if (gfg.keyCode === right_arrow)
       move('right')
     else if (gfg.keyCode === left_arrow)
