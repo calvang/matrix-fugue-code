@@ -11,6 +11,18 @@
   font-size: 30px;
   text-align: center;
 }
+#box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#instructionButton {
+  /* background-color: #f6f8f6; Green */
+  border: none;
+  padding: 5px;
+  text-align: center;
+  font-size: 25px;
+}
 #title {
   text-align: center;
 }

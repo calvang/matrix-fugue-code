@@ -229,7 +229,7 @@ function move(direction) {
     if (visited === traveled.length) {
       if (position === startPosition) {
         let element = document.getElementById('instructions')
-        element.textContent = 'Press Space to Finish'
+        element.textContent = 'Press Space Or Click Here to Finish'
       }
       else {
         let element = document.getElementById('instructions')
@@ -254,7 +254,7 @@ function start() {
   }
   catch (e) {
     let element = document.getElementById('instructions')
-    element.textContent = 'Audio Not Loaded Yet, Please Press Space Again'
+    element.textContent = 'Audio Not Loaded Yet, Please Try Again'
     return
   }
   // let currentTime = Tone.now()
@@ -274,8 +274,11 @@ function start() {
     document.getElementById(`block${position+1}`).style.backgroundColor = 'yellow' 
     finishedIntro = true
 
+    // start touch gestures
+    window.addEventListener('touchstart', startTouch)
+
     let element = document.getElementById('instructions')
-    element.textContent = 'Use the Arrow Keys to move around'
+    element.textContent = 'Use the Arrow Keys Or Swipe to move around'
     let description = document.getElementById('textBody')
     description.textContent = soloDescription
   }, (soloStart+0.5)*1000)  
@@ -300,30 +303,25 @@ var left_arrow = 37
 var up_arrow = 38
 var down_arrow = 40
 
+function instructionControl() {
+  if (end.state === 'stopped' && finished)
+    restart()
+  else if (introduction.state === "stopped" && !finishedIntro)
+    start()
+  else if (visited === grid.length)
+    finished = true
+}
+
+document.getElementById('instructionButton').onclick = function() {
+  instructionControl()
+}
+
 // pause/play using space bar
 document.onkeydown = function(gfg){
   if (gfg.keyCode === space_bar) {
-    if (end.state === 'stopped' && finished)
-      restart()
-    else if (introduction.state === "stopped" && !finishedIntro && gfg.keyCode === space_bar)
-      start()
-    else if (gfg.keyCode === space_bar && visited === grid.length)
-      finished = true
+    instructionControl()
   }
-  // else {
-  //   solo.loop = !solo.loop
-  //   console.log(solo.toSeconds(solo.now()))
-  //   if (solo.loop) {
-  //     solo.start()
-  //     solo.fadeOut = 10
-  //   }  
-  //   else {
-  //     solo.fadeOut = 10
-  //   }
-  // }
-  //   finishedIntro = true
   if (finishedIntro) {
-
     if (gfg.keyCode === right_arrow)
       move('right')
     else if (gfg.keyCode === left_arrow)
@@ -334,5 +332,38 @@ document.onkeydown = function(gfg){
       move('down')
   }
 };
+
+
+// code for touch gestures
+const swipeThreshold = 60 // number of pixels needed to register swipe
+
+var startCoords = [0, 0]
+const endTouch = e => {
+  const deltas = [
+    e.changedTouches[0].clientX - startCoords[0],
+    e.changedTouches[0].clientY - startCoords[1]
+  ]
+  console.log(deltas)
+  if (finishedIntro) {
+    if (deltas[0] >  swipeThreshold) 
+      move('right')
+    else if (deltas[0] < -swipeThreshold) 
+      move('left')
+    else if (deltas[1] >  swipeThreshold) 
+      move('down')
+    else if (deltas[1] < -swipeThreshold) 
+      move('up')
+  }
+  window.removeEventListener('touchend', endTouch)
+}
+
+const startTouch = e => {
+  const { touches } = e
+  if (touches && touches.length === 1) {
+    startCoords = [touches[0].clientX, touches[0].clientY]
+    window.addEventListener('touchend', endTouch)
+  }
+}
+
 
 createGrid(grid)
