@@ -312,6 +312,7 @@ function restart() {
   createGrid(grid)
   resetTracks()
   finishedIntro = false
+  startedEnd = false
   start()
 }
 
