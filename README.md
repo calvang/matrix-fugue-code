@@ -8,6 +8,6 @@ Link: https://calvang.github.io/matrix-fugue
 
 ## Copyright
 
-All files excluding those in `/sources` and `.mp3` files  are under the GNU GENERAL PUBLIC LICENSE.
+All files excluding those in any directory named `sources` and `.mp3` files  are under the GNU GENERAL PUBLIC LICENSE.
 
-All `.mp3` files and all files in `/sources` are fall under Creative Commons, not the GNU GENERAL PUBLIC LICENSE.
+All `.mp3` files and all files in any directory named `sources` fall under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License, not the GNU GENERAL PUBLIC LICENSE.

@@ -4,10 +4,6 @@ import * as Tone from 'tone'
 import { descriptions, introDescription, soloDescription,
   endDescription } from './descriptions'
 
-// 1 2 3
-// 4 5 6
-// 7 8 9
-
 // map from grid positions (index) to track number (value)
 const grid = [
   2,1,4,
@@ -29,9 +25,9 @@ const areas = [
 ]
 // relative volumes for each track
 const volumes = [
-  -20, -15, -20,
-  -15, -5 , -15,
-  -20, -15, -20
+  -20, -12, -20,
+  -12, 2,   -12,
+  -20, -12, -20
 ]
 
 
@@ -68,7 +64,7 @@ function createTracks(matrix) {
   var tracks = []
   for (let i=0; i<matrix.length; i++) {
     var player = new Tone.Player(`./sources/tracks/track${matrix[i]}.mp3`).toDestination()
-    player.volume.value = -15
+    player.volume.value = volumes[i]
     tracks.push(player)
   
   }
@@ -82,16 +78,8 @@ var solo = new Tone.Player(`./sources/Solo.mp3`).toDestination()
 var end = new Tone.Player(`./sources/End.mp3`).toDestination()
 
 var loopLength = 20.9
-// var introductionStart = 32
-// var introductionStop = 36.62 
 var soloStart = 36.635
-// solo.loop = true
-// solo.loopEnd = loopLength
-// solo.debug = true
-// introduction.onstop = function(source) {
-  
-//   // solo.start()
-// }
+
 function playTracks() {
   if (!finished) {
     for (let i=0; i<tracks.length; i++) {
@@ -116,24 +104,6 @@ function playSolo() {
     setTimeout(playSolo, loopLength*1000)
   }
 }
-
-// solo.onstop = function(source) {
-//   console.log('loop')
-//   if (prev != -1) {
-//     playTracks()
-//   }
-//   // for (let i=0; i<active.length; i++) {
-//   //   if (active[i]) {
-//   //     tracks[i].start(0,0,loopLength)
-//   //   }
-//   // }
-//   // if (position==startPosition && !active[startPosition-1])
-//   //   solo.start(0,0,loopLength)
-//   // solo.loopStart()
-// }
-
-
-
 
 function move(direction) {
   var temp = position
@@ -164,7 +134,7 @@ function move(direction) {
       visited++
       traveled[position] = true
     }
-    console.log(visited)
+    
     // compute the active areas and what tracks to play
     for (let i=0; i<areas[prev].length; i++) {
       var index = areas[prev][i] // grid index of track
@@ -227,20 +197,13 @@ var right_arrow = 39;
 var left_arrow = 37
 var up_arrow = 38
 var down_arrow = 40
-var isPlaying = false
-
-function togglePlay() {
-  if (!isPlaying) 
-    start()
-  isPlaying = !isPlaying
-}
 
 // pause/play using space bar
 document.onkeydown = function(gfg){
   if (!finishedIntro && gfg.keyCode === space_bar)
     start()
   else if (gfg.keyCode === space_bar && visited === grid.length)
-    finished = false
+    finished = true
   if (finishedIntro) {
 
     if (gfg.keyCode === right_arrow)
