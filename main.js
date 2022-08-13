@@ -303,13 +303,16 @@ var left_arrow = 37
 var up_arrow = 38
 var down_arrow = 40
 
+// main controls for the instruction button
 function instructionControl() {
-  if (end.state === 'stopped' && finished)
-    restart()
-  else if (introduction.state === "stopped" && !finishedIntro)
-    start()
-  else if (visited === grid.length)
-    finished = true
+  if (end.state === 'stopped') {
+    if (finished)
+      restart()
+    else if (introduction.state === "stopped" && !finishedIntro)
+      start()
+    else if (visited === grid.length)
+      finished = true
+  }
 }
 
 document.getElementById('instructionButton').onclick = function() {
