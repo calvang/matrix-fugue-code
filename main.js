@@ -132,7 +132,7 @@ var trackLoop = new Tone.Loop((time) => {
   }
 }, loopLength)
 
-function fadeIn(track, backupTrack, duration, targetVolume, interval=0.5, step=8) {
+function fadeIn(track, backupTrack, duration, targetVolume, interval=0.2, step=4) {
   const startVolume = targetVolume-(duration/interval)*step
 
   track.volume.value = startVolume
@@ -156,7 +156,7 @@ function fadeIn(track, backupTrack, duration, targetVolume, interval=0.5, step=8
   }, duration*1000)
 }
 
-function fadeOut(track, backupTrack, duration, interval=0.5, step=2) {
+function fadeOut(track, backupTrack, duration, interval=0.2, step=2) {
   var intervalId = setInterval(() => {
     if (track.state === 'started' || backupTrack.state === 'started') {
       backupTrack.volume.value -= step
@@ -302,6 +302,7 @@ function resetTracks() {
 }
 
 function restart() {
+  startedEnd = false
   position = startPosition
   prev = -1
   visited = 0 // count of tiles have been visited
@@ -311,8 +312,8 @@ function restart() {
   active = []
   createGrid(grid)
   resetTracks()
+  Tone.Transport.stop()
   finishedIntro = false
-  startedEnd = false
   start()
 }
 
